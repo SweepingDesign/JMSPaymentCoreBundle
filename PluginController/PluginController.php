@@ -430,8 +430,8 @@ abstract class PluginController implements PluginControllerInterface
         }
 
         $paymentState = $payment->getState();
-        if (PaymentInterface::STATE_APPROVED !== $paymentState && PaymentInterface::STATE_EXPIRED !== $paymentState) {
-            throw new InvalidPaymentException('Payment\'s state must be APPROVED, or EXPIRED.');
+        if (!$payment->isRefundAllowed()) {
+            throw new InvalidPaymentException('Payment\'s state must be DEPOSITED.');
         }
 
         $credit = $this->buildCredit($instruction, $amount);
@@ -474,8 +474,8 @@ abstract class PluginController implements PluginControllerInterface
             if (false === $credit->isIndependent()) {
                 $payment = $credit->getPayment();
                 $paymentState = $payment->getState();
-                if (PaymentInterface::STATE_APPROVED !== $paymentState && PaymentInterface::STATE_EXPIRED !== $paymentState) {
-                    throw new InvalidPaymentException('Payment\'s state must be APPROVED, or EXPIRED.');
+                if (!$payment->isRefundAllowed()) {
+                    throw new InvalidPaymentException('Payment\'s state must be DEPOSITED.');
                 }
 
                 if (1 === Number::compare($amount, $max = $payment->getDepositedAmount() - $payment->getReversingDepositedAmount() - $payment->getCreditingAmount() - $payment->getCreditedAmount())) {
@@ -506,9 +506,8 @@ abstract class PluginController implements PluginControllerInterface
 
             if (false === $credit->isIndependent()) {
                 $payment = $credit->getPayment();
-                $paymentState = $payment->getState();
-                if (PaymentInterface::STATE_APPROVED !== $paymentState && PaymentInterface::STATE_EXPIRED !== $paymentState) {
-                    throw new InvalidPaymentException('Payment\'s state must be APPROVED, or EXPIRED.');
+                if (!$payment->isRefundAllowed()) {
+                    throw new InvalidPaymentException('Payment\'s state must be DEPOSITED.');
                 }
 
                 if (1 === Number::compare($amount, $payment->getCreditingAmount())) {
@@ -526,6 +525,7 @@ abstract class PluginController implements PluginControllerInterface
         $plugin = $this->getPlugin($instruction->getPaymentSystemName());
 
         try {
+            $transaction->setPayment($credit->getPayment());
             $plugin->credit($transaction, $retry);
             $processedAmount = $transaction->getProcessedAmount();
 
