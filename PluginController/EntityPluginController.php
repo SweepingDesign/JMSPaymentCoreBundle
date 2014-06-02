@@ -179,6 +179,11 @@ class EntityPluginController extends PluginController
             $this->entityManager->persist($credit);
             $this->entityManager->persist($result->getFinancialTransaction());
             $this->entityManager->persist($result->getPaymentInstruction());
+
+            if (false === $credit->isIndependent()) {
+                $this->entityManager->persist($credit->getPayment());
+            }
+
             $this->entityManager->flush();
             $this->entityManager->getConnection()->commit();
 
